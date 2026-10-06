@@ -61,7 +61,10 @@ jobs:
           IMAGE_TAG: latest
 
         run: |
+          echo "Building Docker image..."
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+
+          echo "Pushing Docker image to ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
 
@@ -85,7 +88,6 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # Check secrets BEFORE docker pull
       - name: Check ECR secrets
         run: |
           if [ -z "${{ secrets.AWR_ECR_LOGIN_URI }}" ]; then
@@ -102,16 +104,37 @@ jobs:
             echo "ECR_REPOSITORY_NAME is available"
           fi
 
+      - name: Check Docker and ECR
+        run: |
+          echo "=============================="
+          echo "Docker version:"
+          docker --version
+
+          echo "=============================="
+          echo "Docker info:"
+          docker info
+
+          echo "=============================="
+          echo "AWS identity:"
+          aws sts get-caller-identity
+
+          echo "=============================="
+          echo "AWS Region:"
+          echo "${{ secrets.AWS_REGION }}"
+
+          echo "=============================="
+          echo "ECR repositories:"
+          aws ecr describe-repositories
+
       - name: Pull latest image
         run: |
-          docker pull ${{ secrets.AWR_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+          echo "Pulling latest Docker image from ECR..."
+          docker pull "${{ secrets.AWR_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest"
 
-      # Remove old container if it exists
       - name: Stop and remove old container
         run: |
           docker rm -f studentperformanceindicator-docker-deployed || true
 
-      # Start new container
       - name: Run Docker Image to serve users
         run: |
           docker run -d \
@@ -121,15 +144,17 @@ jobs:
             -e "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -e "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
             -e "AWS_REGION=${{ secrets.AWS_REGION }}" \
-            ${{ secrets.AWR_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+            "${{ secrets.AWR_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest"
 
-      # Show running container
       - name: Check running container
         run: |
+          echo "Running containers:"
           docker ps
+
+          echo "=============================="
+          echo "Container logs:"
           docker logs --tail 50 studentperformanceindicator-docker-deployed
 
-      # Clean unused Docker resources
       - name: Clean previous images and containers
         run: |
           docker system prune -f
