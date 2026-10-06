@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Lint code
         run: echo "Linting repository"
@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Utilities
         run: |
@@ -43,7 +43,7 @@ jobs:
           sudo apt-get install -y jq unzip
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -51,7 +51,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
@@ -66,15 +66,16 @@ jobs:
 
 
   Continuous-Deployment:
+    name: Continuous Deployment
     needs: build-and-push-ecr-image
     runs-on: self-hosted
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -82,24 +83,39 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Pull latest images
+      # Check secrets BEFORE docker pull
+      - name: Check ECR secrets
+        run: |
+          if [ -z "${{ secrets.AWR_ECR_LOGIN_URI }}" ]; then
+            echo "ERROR: AWR_ECR_LOGIN_URI is empty or unavailable"
+            exit 1
+          else
+            echo "AWR_ECR_LOGIN_URI is available"
+          fi
+
+          if [ -z "${{ secrets.ECR_REPOSITORY_NAME }}" ]; then
+            echo "ERROR: ECR_REPOSITORY_NAME is empty or unavailable"
+            exit 1
+          else
+            echo "ECR_REPOSITORY_NAME is available"
+          fi
+
+      - name: Pull latest image
         run: |
           docker pull ${{ secrets.AWR_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-      - name: Check ECR image configuration
-        run: |
-          echo "ECR URI: ${{ secrets.AWR_ECR_LOGIN_URI }}"
-          echo "ECR Repository: ${{ secrets.ECR_REPOSITORY_NAME }}"
-
+      # Remove old container if it exists
       - name: Stop and remove old container
         run: |
           docker rm -f studentperformanceindicator-docker-deployed || true
 
+      # Start new container
       - name: Run Docker Image to serve users
         run: |
-          docker run -d -p 8080:8080 \
+          docker run -d \
+            -p 8080:8080 \
             --ipc="host" \
             --name=studentperformanceindicator-docker-deployed \
             -e "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
@@ -107,6 +123,13 @@ jobs:
             -e "AWS_REGION=${{ secrets.AWS_REGION }}" \
             ${{ secrets.AWR_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
+      # Show running container
+      - name: Check running container
+        run: |
+          docker ps
+          docker logs --tail 50 studentperformanceindicator-docker-deployed
+
+      # Clean unused Docker resources
       - name: Clean previous images and containers
         run: |
           docker system prune -f
