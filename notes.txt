@@ -1,0 +1,144 @@
+ml-project-1
+------------
+** always use this command to create a conda environment because with this the conda enviroment also get created and also if we installl any libraries then they will be added inside this library folder of env folder. "conda create -p venv python==3.8 -y" 
+
+** in the beginning always go and create the gitignore file from the github their just select the python template all the ignore files will be auto comming and lateer on we will automize that changes.
+
+** then afer do the setup.py.using this setup.py we will be able to builiding the entire machine learning package into a package and deploy it in pypy.
+
+** anything that has __init__.py is considered to be a package and the setup.py will find the entire folder and search for init and build the package.
+
+** just create a funciton inside the setup.py inorder to read the packages from passed file ie requirement.txt and return a list of packages. manually writting it would be hectic in setup.py. 
+
+** -e . helps to link the setup.py and execute it. and that time only all the packages available inside the ml going to get build and made a package.
+
+** whatever the development we everything comes under the src folder present inside the project.
+
+** in src create a folder with name component its a package. it contaions the files like data ingestion,data transfromation,model trraining part.
+
+** pipelines folder has the model training and model predicting.
+
+** since we implement the logging,expection,utils(helpers) in entire project so they should created at the src folder level.
+
+** in exception import sys. sys have all the details about the errors which we are gettting.
+
+** logging → Python's built-in system for recording messages/errors.
+os → Used to work with folders and file paths.
+datetime → Used to get the current date and time.
+
+** logging.basicConfig(
+    filename=LOG_FILE_PATH,
+    format="[ %(asctime)s ] %(lineno)d %(name)s - %(message)s",
+    level=logging.INFO
+) ("Whenever I use logging.info(), logging.error(), etc., write the information into my log file.")
+
+** MyProject/
+│
+├── logs/
+│   └── 09_30_2026_07_20_15.log
+│
+├── app.py
+└── logger.py
+
+** if the ipykernal is not setup is giving error then resolve using below commands running in powershell (the easiest solution is to recreate the virtual environment.)
+    1.python --version
+    2.python -m venv venv
+    3.dir .\venv\Scripts
+    4..\venv\Scripts\Activate.ps1
+    5.python -m pip install --upgrade pip
+    6.python -m pip install ipykernel
+
+** steps related to the end to end student performnence prediction project
+    1.devide the dataset into train test split
+    2.standardize it using columnTransformer and one hot encoder.
+    3.train the model using the standardized datat
+    4.check the model performence based on different metric for classification and regression problem
+    5.hyperparameter it using the different hyderparameters and find the best hyperparameter using the gridsearch cv or random search cv and retrain the model using the best predicted hyperparameter by gridsearch or random search.
+
+** in big companies their will a biggdata engineers who basically brings the data from diffrent sources and put them in a different bases and based on that scientist need to use that data for model bnuilding or prediction.
+
+** inside the data ingestion component. we give the different inputs to this component that is where the test/train/raw data should be stored once retrieved.and for defining the inputs we can use the @dataclass decorator. and if we have other function as well then its better to use the normal class with init.
+
+** always make sure you logg everything as much as possible as its very much important if any exceptions come. and always use try except block.
+
+** in data_transformation.py we will perform everything related to like missing values, transfromation, standardization and impupations techniques will be performed in here.
+
+** in get_columnTranseformer object in data transformation function just make only pipelines and return the columnTransformer object
+
+** in intiate data transformation use the columnTransformer object and fit_transform for train data and transeform for test data.
+
+** always create the save objects functions in utils and use them in data ingestion and transformation files.
+
+** flask library has the the three sub libraries Flask,render_html,request. at a time you can load.
+
+** whenever deploying any project to aws bean stalk always create a folder called .ebextensions in that python.config file would be their in which you will mentioning the configuration.
+
+** always while deploying the code creat a application.py similar to app.py and remove the debugger is true and port no. (this should be done)
+
+**application.py becouse aws accepts in this way only.
+
+**steps to Deploy in aws:
+GitHub is used to store the application source code.
+Developers push the latest code changes to the GitHub repository.
+AWS CodePipeline is connected to the GitHub repository.
+CodePipeline detects changes in the repository and starts the pipeline.
+CodePipeline automates the process of delivering the application to AWS.
+The latest code is passed from GitHub through the pipeline.
+Elastic Beanstalk is used to deploy and run the application.
+Elastic Beanstalk manages the application environment and required AWS infrastructure.
+The Python application can be configured using configuration files such as python.config.
+The application runs inside an Elastic Beanstalk environment.
+The overall flow is: GitHub → CodePipeline → Elastic Beanstalk → Application.
+
+1. Initially, I entered the wrong project/repository name **`StudentMarksPrediction`**. The actual GitHub repository was **`MLPROJECT-1`**, so I corrected the repository selection.
+
+2. Created an **AWS CodeConnections** connection to connect GitHub with AWS CodePipeline.
+
+3. The GitHub connection showed **Available**, but the repository/branch was not appearing in CodePipeline.
+
+4. Checked **GitHub → Settings → Applications → Installed GitHub Apps**, but **AWS Connector for GitHub** was not listed.
+
+5. GitHub authorization was completed, but the expected AWS Connector installation/authorization screen did not appear.
+
+6. Initially selected the wrong **Docker-based CodePipeline template**, which contained options like **ECR, Docker Build Context, DockerFilePath, and Image Tag**.
+
+7. Realized that Docker/ECR/ECS was not required because the application needed to be deployed to **AWS Elastic Beanstalk**.
+
+8. Went back to the pipeline template selection and selected **Build custom pipeline**.
+
+9. Created the pipeline with the name **`MLPROJECT-1-Pipeline`**.
+
+10. Selected **Superseded** as the pipeline execution mode.
+
+11. Selected **New service role** so AWS CodePipeline could create its required IAM service role.
+
+12. Used the **Default location** for the artifact store.
+
+13. Used the **AWS Managed Key** as the encryption key.
+
+14. For the **Build stage**, I initially checked the available options but skipped the build stage because the project could be deployed directly from the GitHub source artifact.
+
+15. For the **Test stage**, I skipped testing because no automated test stage was configured for the project yet.
+
+16. The **Deploy stage** initially did not show the required Elastic Beanstalk environment, so I had to configure/create the Elastic Beanstalk application and environment.
+
+17. During deployment, I received the IAM error:
+    **`The provided role does not have the elasticbeanstalk:CreateApplicationVersion permission`**
+
+18. I initially opened **IAM Roles Anywhere** by mistake, but this was not the correct place for the CodePipeline service-role permissions.
+
+19. Corrected this by going to **AWS IAM → Roles** and locating the **CodePipeline service role**.
+
+20. Updated the CodePipeline service role permissions to allow the required **Elastic Beanstalk actions**, including `elasticbeanstalk:CreateApplicationVersion`.
+
+21. After updating the IAM permissions, I reran the pipeline.
+
+22. The pipeline successfully retrieved the code from **GitHub**, deployed it through **AWS CodePipeline**, and released it to **AWS Elastic Beanstalk**.
+
+23. Final deployment flow:
+    **GitHub → AWS CodePipeline → AWS Elastic Beanstalk → Flask ML Application → Cricket Match Score Prediction**.
+
+24. The project was successfully deployed and made accessible through the Elastic Beanstalk environment.
+
+** -------------------------new project notes ------------------->>
+** 
