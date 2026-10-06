@@ -3,6 +3,7 @@ from src.pipelines.predict_pipeline import PredictPipeline
 from src.exception import CustomException
 import sys
 
+
 application = Flask(__name__)
 app = application
 
